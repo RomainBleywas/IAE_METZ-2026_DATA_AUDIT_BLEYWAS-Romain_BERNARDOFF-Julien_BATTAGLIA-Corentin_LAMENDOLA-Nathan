@@ -11,7 +11,7 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title(" Analyseur de Corrélations : Décisions Politiques ↔ Cours Nvidia")
+st.title(" Analyseur de Corrélations : Décisions Politiques / Cours Nvidia")
 st.markdown("Le but est d'explorer les liens entre les événements politiques et les mouvements boursiers de Nvidia")
 st.markdown("---")
 
