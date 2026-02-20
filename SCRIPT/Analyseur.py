@@ -344,7 +344,7 @@ political_events = {
 
 # Analyse
 def analyze_correlation(question, price_data, events):
-    """Analyse simple des corrélations (sans API externe)"""
+    "Analyse simple des corrélations "
     responses = {
         "élections": "Les élections de novembre 2024 ont impacté le secteur tech. Nvidia, leader en IA, a bénéficié de l'intérêt politique pour les technologies émergentes.",
         "impact": "L'annonce de nouvelles régulations IA a provoqué une volatilité à court terme, suivi d'une reprise liée aux applications pratiques.",
@@ -396,7 +396,7 @@ with col3:
 
 if st.session_state.data_source == "excel" and st.session_state.nvidia_data is not None:
     nvidia_data = st.session_state.nvidia_data.copy()
-    st.info(" C'est carré")
+    st.info(" C'est bon")
 else:
     nvidia_data = get_nvidia_data(days)
 
