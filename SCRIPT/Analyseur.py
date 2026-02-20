@@ -4,7 +4,7 @@ import yfinance as yf
 from datetime import datetime, timedelta
 import plotly.graph_objects as go
 
-# Configuration de la page (sur l'autre interface)
+
 st.set_page_config(
     page_title="Analyse Nvidia & Politique",
     page_icon="",
@@ -15,7 +15,7 @@ st.title(" Analyseur de Corrélations : Décisions Politiques ↔ Cours Nvidia")
 st.markdown("Le but est d'explorer les liens entre les événements politiques et les mouvements boursiers de Nvidia")
 st.markdown("---")
 
-# Initialiser les variables de session
+
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "nvidia_data" not in st.session_state:
@@ -23,9 +23,9 @@ if "nvidia_data" not in st.session_state:
 if "events" not in st.session_state:
     st.session_state.events = []
 if "data_source" not in st.session_state:
-    st.session_state.data_source = "yfinance"  # 'excel' ou 'yfinance'
+    st.session_state.data_source = "yfinance"  
 
-# ===== FONCTION DE TRAITEMENT DE FICHIERS EXCEL =====
+# Pour excel
 def process_excel_data(uploaded_file):
     """Traite un fichier Excel/CSV uploadé et retourne un DataFrame nettoyé"""
     try:
@@ -34,12 +34,12 @@ def process_excel_data(uploaded_file):
         else:
             df = pd.read_excel(uploaded_file)
 
-        # Forcer index datetime si colonne Date présente
+       
         if 'Date' in df.columns:
             df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
             df = df.set_index('Date')
 
-        # Choix de la colonne prix (Close) si besoin
+      
         price_col = None
         if 'Close' in df.columns:
             price_col = 'Close'
@@ -50,7 +50,7 @@ def process_excel_data(uploaded_file):
             if numeric_cols:
                 price_col = numeric_cols[0]
 
-        # Gérer la colonne date / index
+     
         if not isinstance(df.index, pd.DatetimeIndex):
             date_candidates = [c for c in df.columns if 'date' in c.lower()]
             if date_candidates:
@@ -66,12 +66,11 @@ def process_excel_data(uploaded_file):
                 except Exception:
                     st.warning("L'index n'est pas en datetime et aucune colonne date détectée.")
 
-        # Normaliser la colonne de prix en 'Close'
         if price_col and price_col in df.columns:
             if price_col != 'Close':
                 df = df.rename(columns={price_col: 'Close'})
 
-        # Nettoyage minimal
+      
         try:
             df.index = pd.to_datetime(df.index, errors='coerce')
             df = df.dropna(subset=['Close'])
@@ -84,25 +83,25 @@ def process_excel_data(uploaded_file):
         st.error(f"Erreur lors du traitement du fichier: {e}")
         return None
 
-# ===== RÉCUPÉRATION DES DONNÉES NVIDIA =====
+# Données Nvidia
 @st.cache_data
 def get_nvidia_data(days=180):
     """ données Nvidia des 6 derniers mois"""
     end_date = datetime.now()
     start_date = end_date - timedelta(days=days)
 
-    # Tentative 1: requête avec start/end
+ 
     try:
         with st.spinner(" Téléchargement des données Nvidia (start/end)"):
             data = yf.download("NVDA", start=start_date, end=end_date, interval='1d', progress=False)
             if data is not None and not data.empty:
                 st.info(f" Données reçues ({len(data)} lignes) via start/end")
                 return data
-            # si vide, on passera aux fallback
+          
     except Exception as e:
         st.warning(f" Erreur start/end: {e}")
 
-    # Tentative 2: requête par période (plus robuste)
+
     try:
         period_str = f"{days}d" if days <= 3650 else "10y"
         with st.spinner(f" Tentative fallback: period={period_str}..."):
@@ -113,7 +112,7 @@ def get_nvidia_data(days=180):
     except Exception as e:
         st.warning(f" Erreur period fallback: {e}")
 
-    # Tentative 3: essayer une période longue par défaut
+  
     try:
         with st.spinner(" Dernière tentative: period=10y..."):
             data = yf.download("NVDA", period="10y", interval='1d', progress=False)
@@ -123,15 +122,15 @@ def get_nvidia_data(days=180):
     except Exception as e:
         st.warning(f" Erreur dernière tentative: {e}")
 
-    # Si on a des données, nettoyer l'index et s'assurer d'une fréquence 'daily' (jours ouvrés)
+  
     if data is not None and not data.empty:
         try:
-            # Assurer DatetimeIndex trié et sans duplicats
+            
             data.index = pd.to_datetime(data.index)
             data = data.sort_index()
             data = data[~data.index.duplicated(keep='first')]
 
-            # Vérifier la fréquence; si non daily/business, resampler en jours ouvrés et forward-fill
+          
             freq = pd.infer_freq(data.index)
             if freq is None or 'D' not in freq and 'B' not in freq:
                 st.info("ℹ Index non-daily détecté — resampling en jours ouvrés (B) avec forward-fill")
@@ -147,7 +146,7 @@ def get_nvidia_data(days=180):
     st.info(" Vérifiez la connexion Internet, le pare-feu ou réessayez plus tard.")
     return None
 
-# ===== ÉVÉNEMENTS POLITIQUES CLÉS =====
+# événements politiques
 political_events = {
     # 2015
     "2015-03-20": {
@@ -343,7 +342,7 @@ political_events = {
     },
 }
 
-# ===== FONCTION D'ANALYSE =====
+# Analyse
 def analyze_correlation(question, price_data, events):
     """Analyse simple des corrélations (sans API externe)"""
     responses = {
@@ -361,24 +360,23 @@ def analyze_correlation(question, price_data, events):
     
     return f"Analyse du contexte actuel: Nvidia est en position forte suite aux développements récents en IA. Les événements politiques affectent surtout la volatilité court-terme."
 
-# ===== SECTION 1: DONNÉES NVIDIA =====
 st.subheader(" Cours Nvidia (NVDA)")
 
-# Upload file widget - PRIORITAIRE
+# Upload file widget - car bug avec yahoo finance
 uploaded_file = st.file_uploader(" Importer un fichier Excel/CSV", type=["csv", "xlsx"])
 
 if uploaded_file is not None:
-    # Utilisateur a fourni un Excel → le charger et sauvegarder
+
     excel_data = process_excel_data(uploaded_file)
     if excel_data is not None and not excel_data.empty:
         st.session_state.nvidia_data = excel_data
         st.session_state.data_source = "excel"
         st.success(f" Données Excel chargées ({len(excel_data)} lignes)")
 else:
-    # Pas de fichier: utiliser yfinance
+
     st.session_state.data_source = "yfinance"
 
-# Barre d'outils
+
 col1, col2, col3 = st.columns([2, 1, 1])
 
 with col1:
@@ -396,7 +394,6 @@ with col3:
             st.session_state.data_source = "yfinance"
             st.rerun()
 
-# Charger les données selon la source
 if st.session_state.data_source == "excel" and st.session_state.nvidia_data is not None:
     nvidia_data = st.session_state.nvidia_data.copy()
     st.info(" C'est carré")
@@ -407,8 +404,7 @@ if nvidia_data is None or nvidia_data.empty:
     st.error(" Aucune donnée disponible. Importez un Excel ou vérifiez votre connexion Internet.")
     st.stop()
 
-#  FILTRER LES DONNÉES EN FONCTION DU SLIDER (nombre de jours)
-# Cela affectera le graphique, stats, événements, tout!
+
 try:
     end_date = nvidia_data.index.max()
     start_date = end_date - timedelta(days=days)
@@ -421,11 +417,11 @@ if nvidia_data.empty:
     st.error(" Aucune donnée pour cette période. Augmentez le nombre de jours.")
     st.stop()
 
-# Convertir les données pour plotly
+# Convertir les données pour le package plotly
 dates = nvidia_data.index.astype(str)
 prices = nvidia_data['Close'].astype(float)
 
-# Afficher le graphique
+# mettre le graphique 
 fig = go.Figure()
 
 fig.add_trace(go.Scatter(
@@ -457,7 +453,7 @@ event_impacts = []
 
 for date_str, event_data in political_events.items():
     date = pd.to_datetime(date_str)
-    # Ajouter l'événement s'il est dans la plage affichée
+   
     if data_start <= date <= data_end:
         # Trouver le prix le plus proche de cette date
         date_idx = nvidia_data.index.searchsorted(date)
@@ -469,7 +465,7 @@ for date_str, event_data in political_events.items():
             event_colors.append(colors_map.get(event_data.get("impact", "Neutre"), "blue"))
             event_impacts.append(event_data["impact"])
         
-        # Ajouter aussi la ligne verticale
+       
         color = colors_map.get(event_data.get("impact", "Neutre"), "blue")
         fig.add_vline(
             x=date.strftime('%Y-%m-%d'),
@@ -514,13 +510,13 @@ st.plotly_chart(fig, use_container_width=True)
 # Message de confirmation
 st.success(f" Graphique généré - {len(event_dates)} point(s) d'événement ajoutés")
 
-# ===== MATRICE DE CORRÉLATION ÉVÉNEMENTS ↔ RENDEMENTS =====
+#  Matrice de corrélation
 try:
     returns = nvidia_data['Close'].pct_change()
 
     mode = st.radio("Mode de corrélation:", options=["Par événement", "Par catégorie"], index=0, horizontal=True)
 
-    # --- UI: sélectionner / ajouter des horizons personnalisés ---
+    
     presets = [0, 1, 3, 5, 10, 30, 90, 180, 365]
     col_h1, col_h2 = st.columns([2, 3])
     with col_h1:
@@ -540,10 +536,9 @@ try:
                 if v >= 0:
                     custom.append(v)
             except Exception:
-                # ignorer les valeurs invalides
+               
                 pass
 
-    # Construire la liste finale d'horizons (unique, triée)
     horizons = sorted(set(selected + custom)) if (selected or custom) else presets
 
     if mode == "Par catégorie":
@@ -574,8 +569,7 @@ try:
         z = corr_matrix.values
 
     else:
-        # Par événement individuel
-        # Construire une colonne par événement (date + titre court)
+     
         event_items = []
         for date_str, event_data in sorted(political_events.items()):
             date = pd.to_datetime(date_str)
@@ -653,7 +647,7 @@ with col4:
 
 st.markdown("---")
 
-# ===== SECTION 2: ÉVÉNEMENTS POLITIQUES DÉTAILLÉS =====
+# details des événements (impact)
 st.subheader(" Événements Politiques Clés")
 st.write("Les événements affichés sur le graphique avec codes couleur :")
 
@@ -715,23 +709,23 @@ for date_str, event_data in sorted(political_events.items(), reverse=True):
 
 st.markdown("---")
 
-# ===== SECTION 3: CHATBOT ANALYSEUR =====
+# Tentative de chatbot 
 st.subheader(" Chatbot Analyseur")
 st.info(" Posez des questions sur les corrélations entre les événements politiques et le cours Nvidia")
 
-# Afficher l'historique des messages
+# Le but est de garder une trace des messages 
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# Input utilisateur
+
 if prompt := st.chat_input("Posez une question (ex: 'Quel impact les élections ont eu sur Nvidia?')"):
-    # Ajouter le message utilisateur
+   
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
     
-    # Générer la réponse (sans API OpenAI, analyse locale)
+    # Générer une réponse 
     with st.chat_message("assistant"):
         with st.spinner("Analyse en cours..."):
             response = analyze_correlation(prompt, nvidia_data, political_events)
