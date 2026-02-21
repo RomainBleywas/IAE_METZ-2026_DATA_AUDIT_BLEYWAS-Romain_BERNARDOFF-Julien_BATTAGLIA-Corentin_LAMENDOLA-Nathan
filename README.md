@@ -7,4 +7,7 @@ L'objectif est de déterminer par l'étude de certains facteurs comment les év�
 
 Conclusion : 
 
-
+On observe en général une absence de corrélation entre les évennements politiques mondiaux et américains sur le cours de l'actionn de Nvidia, notamment sur le long terme. 
+La corrélation avec les matières premières observée est aussi plutôt faible. Elle est plus important entre les matières premières et le résultat de l'entreprise.
+On estime donc que Nvidia est une entreprise dont la valorisation s'est affranchie de son environnement politique et des ressources nécessaires à son activité. 
+Il pourrait donc être intèressant de chercher des facteurs externes plus impactant comme d'autres matières premières dont les données sont plus difficiles d'accès ou encore la croissance du marché de l'IA.
